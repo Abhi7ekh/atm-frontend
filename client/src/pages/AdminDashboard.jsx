@@ -1,142 +1,153 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { toast } from "react-toastify";
-import Navbar from "../components/Navbar";
+import React, { useEffect, useState } from "react";
+import { createTask, getAllTasks, deleteTask } from "../services/api";
+import { useNavigate } from "react-router-dom";
 
-function AdminDashboard() {
-  const [taskData, setTaskData] = useState({
-    title: "",
-    description: "",
-    assignedTo: "",
-  });
+const AdminDashboard = () => {
+  const navigate = useNavigate();
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
+
   const [tasks, setTasks] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [form, setForm] = useState({ title: "", description: "", assignedTo: "" });
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  // 🔒 Protect route and fetch tasks
+  useEffect(() => {
+    if (!token || role !== "admin") {
+      navigate("/");
+    } else {
+      fetchTasks();
+    }
+  }, [navigate, token, role]);
+
+  // 📥 Fetch tasks
   const fetchTasks = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/tasks", {
-        headers: { Authorization: localStorage.getItem("token") },
-      });
-      setTasks(res.data);
-    } catch (err) {
-      toast.error("Failed to load tasks");
+    setLoading(true);
+    const res = await getAllTasks(token);
+    if (res.success) {
+      setTasks(res.tasks);
+    } else {
+      setMessage(res.error || "Failed to load tasks ❌");
     }
+    setLoading(false);
   };
 
-  const fetchStudents = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/auth/students", {
-        headers: { Authorization: localStorage.getItem("token") },
-      });
-      setUsers(res.data);
-    } catch (err) {
-      toast.error("Failed to load students");
-    }
+  // ✏️ Handle form input
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleChange = (e) => {
-    setTaskData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
+  // ✅ Create new task
   const handleCreateTask = async (e) => {
     e.preventDefault();
-    try {
-      await axios.post("http://localhost:5000/api/tasks", taskData, {
-        headers: { Authorization: localStorage.getItem("token") },
-      });
-      toast.success("Task created");
-      setTaskData({ title: "", description: "", assignedTo: "" });
+    setLoading(true);
+
+    const res = await createTask(form, token);
+    if (res.success || res.message) {
+      setMessage(res.message || "Task created ✅");
+      setForm({ title: "", description: "", assignedTo: "" });
       fetchTasks();
-    } catch (err) {
-      toast.error("Task creation failed");
+    } else {
+      setMessage(res.error || "Task creation failed ❌");
     }
+
+    setLoading(false);
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await axios.delete(`http://localhost:5000/api/tasks/${id}`, {
-        headers: { Authorization: localStorage.getItem("token") },
-      });
-      toast.success("Task deleted");
+  // ❌ Delete a task
+  const handleDelete = async (taskId) => {
+    const res = await deleteTask(taskId, token);
+    if (res.success || res.message) {
+      setMessage("Task deleted ✅");
       fetchTasks();
-    } catch (err) {
-      toast.error("Delete failed");
+    } else {
+      setMessage(res.error || "Failed to delete task ❌");
     }
   };
-
-  useEffect(() => {
-    fetchStudents();
-    fetchTasks();
-  }, []);
 
   return (
-    <>
-      <Navbar />
-      <div className="p-6">
-        <h2 className="text-2xl font-bold mb-4 text-blue-600">Admin Dashboard</h2>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow">
+        <h1 className="text-3xl font-bold mb-4 text-blue-700">🛡️ Admin Dashboard</h1>
 
-        <form onSubmit={handleCreateTask} className="mb-6">
-          <div className="flex flex-col gap-2 max-w-md">
-            <input
-              type="text"
-              name="title"
-              placeholder="Task Title"
-              value={taskData.title}
-              onChange={handleChange}
-              className="p-2 border rounded"
-              required
-            />
-            <textarea
-              name="description"
-              placeholder="Task Description"
-              value={taskData.description}
-              onChange={handleChange}
-              className="p-2 border rounded"
-              required
-            />
-            <select
-              name="assignedTo"
-              value={taskData.assignedTo}
-              onChange={handleChange}
-              className="p-2 border rounded"
-              required
-            >
-              <option value="">Select Student</option>
-              {users.map((user) => (
-                <option key={user._id} value={user._id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
-              Create Task
-            </button>
+        {message && (
+          <div className="mb-4 p-3 rounded text-white bg-blue-600">
+            {message}
           </div>
+        )}
+
+        {/* 📌 Task Creation Form */}
+        <form onSubmit={handleCreateTask} className="mb-6 grid gap-4">
+          <input
+            type="text"
+            name="title"
+            placeholder="Task Title"
+            value={form.title}
+            onChange={handleInputChange}
+            required
+            className="w-full p-2 border rounded"
+          />
+          <textarea
+            name="description"
+            placeholder="Task Description"
+            value={form.description}
+            onChange={handleInputChange}
+            required
+            className="w-full p-2 border rounded"
+          />
+          <input
+            type="email"
+            name="assignedTo"
+            placeholder="Assign to (Student Email)"
+            value={form.assignedTo}
+            onChange={handleInputChange}
+            required
+            className="w-full p-2 border rounded"
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
+          >
+            {loading ? "Creating..." : "➕ Create Task"}
+          </button>
         </form>
 
-        <h3 className="text-xl font-semibold mb-2">All Tasks</h3>
-        <ul className="space-y-2">
-          {tasks.map((task) => (
-            <li key={task._id} className="border p-4 rounded flex justify-between">
-              <div>
-                <h4 className="font-bold">{task.title}</h4>
-                <p>{task.description}</p>
-              </div>
-              <button
-                onClick={() => handleDelete(task._id)}
-                className="text-red-500 hover:underline"
+        {/* 📋 All Tasks Section */}
+        <h2 className="text-xl font-semibold mb-3">📋 All Tasks</h2>
+        {loading ? (
+          <p className="text-gray-600">Loading tasks...</p>
+        ) : tasks.length === 0 ? (
+          <p>No tasks found.</p>
+        ) : (
+          <ul className="space-y-3">
+            {tasks.map((task) => (
+              <li
+                key={task._id}
+                className="border p-4 rounded shadow-sm flex justify-between items-start bg-gray-50"
               >
-                Delete
-              </button>
-            </li>
-          ))}
-        </ul>
+                <div>
+                  <h3 className="font-semibold text-lg">{task.title}</h3>
+                  <p className="text-gray-700">{task.description}</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Assigned to: {task.assignedTo}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleDelete(task._id)}
+                  className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                >
+                  ❌ Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-    </>
+    </div>
   );
-}
+};
 
 export default AdminDashboard;

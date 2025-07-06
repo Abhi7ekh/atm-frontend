@@ -1,81 +1,95 @@
-import { useState } from "react";
-import axios from "axios";
-import { toast } from "react-toastify";
+import React, { useState } from "react";
+import { registerUser } from "../services/api";
 import { useNavigate } from "react-router-dom";
 
-function Register() {
-  const [formData, setFormData] = useState({
+const Register = () => {
+  const navigate = useNavigate();
+  const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
     role: "student",
   });
-  const navigate = useNavigate();
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMsg("");
     try {
-      await axios.post("http://localhost:5000/api/auth/register", formData);
-      toast.success("Registration successful");
-      navigate("/login");
+      const res = await registerUser(form);
+      if (res.success) {
+        setSuccessMsg("Registration successful! Redirecting to login...");
+        setTimeout(() => navigate("/"), 1500);
+      } else {
+        setErrorMsg(res.message || "Registration failed.");
+      }
     } catch (err) {
-      toast.error("Registration failed");
+      setErrorMsg("Server error. Please try again.");
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow-md w-96">
-        <h2 className="text-2xl font-bold mb-6 text-center text-blue-700">Register</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow-md w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-4 text-center">Register</h2>
+
+        {errorMsg && <p className="text-red-600 text-sm mb-2">{errorMsg}</p>}
+        {successMsg && <p className="text-green-600 text-sm mb-2">{successMsg}</p>}
+
         <input
           type="text"
           name="name"
-          value={formData.name}
-          onChange={handleChange}
           placeholder="Name"
+          value={form.name}
+          onChange={handleChange}
+          className="w-full p-2 mb-4 border rounded"
           required
-          className="mb-4 w-full px-4 py-2 border rounded"
         />
+
         <input
           type="email"
           name="email"
-          value={formData.email}
-          onChange={handleChange}
           placeholder="Email"
+          value={form.email}
+          onChange={handleChange}
+          className="w-full p-2 mb-4 border rounded"
           required
-          className="mb-4 w-full px-4 py-2 border rounded"
         />
+
         <input
           type="password"
           name="password"
-          value={formData.password}
-          onChange={handleChange}
           placeholder="Password"
+          value={form.password}
+          onChange={handleChange}
+          className="w-full p-2 mb-4 border rounded"
           required
-          className="mb-4 w-full px-4 py-2 border rounded"
         />
+
         <select
           name="role"
-          value={formData.role}
+          value={form.role}
           onChange={handleChange}
-          className="mb-4 w-full px-4 py-2 border rounded"
+          className="w-full p-2 mb-4 border rounded"
         >
           <option value="student">Student</option>
           <option value="admin">Admin</option>
         </select>
+
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+          className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
         >
           Register
         </button>
       </form>
     </div>
   );
-}
+};
 
 export default Register;

@@ -1,47 +1,61 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { toast } from "react-toastify";
-import Navbar from "../components/Navbar";
+import React, { useEffect, useState } from "react";
+import { getMyTasks } from "../services/api"; // 🎯 Correct API
+import { useNavigate } from "react-router-dom";
 
-function StudentDashboard() {
+const StudentDashboard = () => {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
-
-  const fetchMyTasks = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/tasks/my", {
-        headers: { Authorization: localStorage.getItem("token") },
-      });
-      setTasks(res.data);
-    } catch (err) {
-      toast.error("Failed to load your tasks");
-    }
-  };
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    fetchMyTasks();
-  }, []);
+    const fetchTasks = async () => {
+      const token = localStorage.getItem("token");
+      const role = localStorage.getItem("role");
+
+      if (!token || role !== "student") {
+        navigate("/"); // Redirect unauthorized access
+        return;
+      }
+
+      try {
+        const res = await getMyTasks(token);
+        if (res.success) {
+          setTasks(res.tasks);
+        } else {
+          setErrorMsg(res.message || "Unable to fetch tasks ❌");
+        }
+      } catch (error) {
+        console.error("❌ Fetch Error:", error);
+        setErrorMsg("Server error ❌");
+      }
+    };
+
+    fetchTasks();
+  }, [navigate]);
 
   return (
-    <>
-      <Navbar />
-      <div className="p-6">
-        <h2 className="text-2xl font-bold mb-4 text-green-600">Student Dashboard</h2>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-3xl mx-auto bg-white rounded-lg shadow p-6">
+        <h1 className="text-2xl font-bold mb-4 text-blue-700">🎓 Student Dashboard</h1>
 
-        {tasks.length === 0 ? (
+        {errorMsg && <p className="text-red-600 mb-4">{errorMsg}</p>}
+
+        {tasks.length === 0 && !errorMsg ? (
           <p className="text-gray-600">No tasks assigned yet.</p>
         ) : (
           <ul className="space-y-4">
             {tasks.map((task) => (
-              <li key={task._id} className="border rounded p-4 shadow">
-                <h3 className="text-lg font-semibold">{task.title}</h3>
-                <p className="text-sm text-gray-700">{task.description}</p>
+              <li key={task._id || task.id} className="border p-4 rounded shadow bg-gray-50">
+                <h3 className="font-semibold text-lg">{task.title}</h3>
+                <p className="text-gray-700">{task.description}</p>
+                <p className="text-sm text-gray-500 mt-1">Status: {task.status}</p>
               </li>
             ))}
           </ul>
         )}
       </div>
-    </>
+    </div>
   );
-}
+};
 
 export default StudentDashboard;

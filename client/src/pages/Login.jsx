@@ -1,75 +1,78 @@
-import { useState } from "react";
-import axios from "axios";
-import { toast } from "react-toastify";
+// client/src/pages/Login.jsx
+
+import React, { useState } from "react";
+import { loginUser } from "../services/api";
 import { useNavigate } from "react-router-dom";
 
-function Login() {
+const Login = () => {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-
-  const handleChange = (e) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
-  };
-
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", formData);
-      localStorage.setItem("token", res.data.token);
-      toast.success("Login successful!");
+      const res = await loginUser(email, password);
 
-      if (res.data.user.role === "admin") {
-        navigate("/admin");
+      if (res && res.token) {
+        const { token, user } = res;
+
+        // ✅ Store token & user info
+        localStorage.setItem("token", token);
+        localStorage.setItem("role", user.role);
+        localStorage.setItem("email", user.email);
+        localStorage.setItem("username", user.username);
+
+        // ✅ Navigate by role
+        if (user.role === "admin") {
+          navigate("/admin/dashboard");
+        } else {
+          navigate("/student/dashboard");
+        }
       } else {
-        navigate("/student");
+        setErrorMsg(res.error || "Invalid credentials ❌");
       }
-
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Login failed");
+    } catch (error) {
+      console.error(error);
+      setErrorMsg("Server error. Please try again later ❌");
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white shadow-md p-8 rounded-lg max-w-md w-full">
-        <h2 className="text-2xl font-semibold text-center mb-6 text-blue-600">Login</h2>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="border px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            className="border px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200"
-          >
-            Login
-          </button>
-        </form>
-      </div>
+      <form onSubmit={handleLogin} className="bg-white p-8 rounded shadow-md w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-4 text-center">🔐 Login</h2>
+
+        {errorMsg && <p className="text-red-600 text-sm mb-2">{errorMsg}</p>}
+
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full p-2 mb-4 border rounded"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+
+        <input
+          type="password"
+          placeholder="Password"
+          className="w-full p-2 mb-4 border rounded"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+        >
+          🔓 Login
+        </button>
+      </form>
     </div>
   );
-}
+};
 
 export default Login;

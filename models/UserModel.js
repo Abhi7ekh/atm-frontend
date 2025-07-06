@@ -1,13 +1,16 @@
-const createUserDoc = ({ name, email, hashedPassword, role }) => {
-  return {
-    _id: email, // Unique identifier for the user
-    name,
-    email,
-    password: hashedPassword,
-    role,
-    type: 'user',
-    createdAt: new Date().toISOString(),
-  };
+const { cloudant, dbName } = require('../utils/db');
+
+const getUserByEmail = async (email) => {
+  try {
+    const result = await cloudant.postFind({
+      db: dbName,
+      selector: { email },
+      limit: 1,
+    });
+    return result.result.docs[0];
+  } catch (err) {
+    throw err;
+  }
 };
 
-module.exports = { createUserDoc };
+module.exports = { getUserByEmail };
