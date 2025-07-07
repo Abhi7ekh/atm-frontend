@@ -1,16 +1,25 @@
-const connectDB = require('../utils/db');
+const connectDB = require("../utils/db");
+const { TASKS_DB } = require("../constants/dbNames");
 
-const TASKS_DB = 'tasks';
-
-// ===========================
-// ➕ CREATE TASK (Admin)
-// ===========================
+// =====================================================
+// 🆕 CREATE TASK (Supports Multiple Students)
+// =====================================================
 exports.createTask = async (req, res) => {
   try {
-    const { title, description, assignedTo } = req.body;
+    const { title, description, assignedTo, dueDate } = req.body;
 
-    if (!title || !description || !assignedTo) {
-      return res.status(400).json({ success: false, message: 'All fields are required' });
+    if (!title || !description || !assignedTo || !dueDate) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required ❌",
+      });
+    }
+
+    if (!Array.isArray(assignedTo) || assignedTo.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one student must be assigned ❌",
+      });
     }
 
     const { cloudantClient } = await connectDB();
@@ -19,7 +28,8 @@ exports.createTask = async (req, res) => {
       title,
       description,
       assignedTo,
-      status: 'pending',
+      dueDate,
+      status: "pending",
       createdAt: new Date().toISOString(),
     };
 
@@ -28,87 +38,91 @@ exports.createTask = async (req, res) => {
       document: task,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message: 'Task created ✅',
+      message: "✅ Task created successfully",
       taskId: response.result.id,
     });
   } catch (err) {
-    console.error('❌ Create Task Error:', err.message);
-    res.status(500).json({ success: false, message: 'Server error during task creation' });
+    console.error("❌ Create Task Error:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: "Server error during task creation",
+    });
   }
 };
 
-// ===========================
-// 🎓 GET TASKS FOR LOGGED-IN STUDENT
-// ===========================
-exports.getMyTasks = async (req, res) => {
-  try {
-    const { cloudantClient } = await connectDB();
-
-    const result = await cloudantClient.postFind({
-      db: TASKS_DB,
-      selector: {
-        assignedTo: req.user.email,
-      },
-    });
-
-    res.json({
-      success: true,
-      tasks: result.result.docs,
-    });
-  } catch (err) {
-    console.error('❌ Get My Tasks Error:', err.message);
-    res.status(500).json({ success: false, message: 'Server error while fetching student tasks' });
-  }
-};
-
-// ===========================
-// 🛡️ GET ALL TASKS (Admin)
-// ===========================
+// =====================================================
+// 🧾 GET ALL TASKS (Admin)
+// =====================================================
 exports.getAllTasks = async (req, res) => {
   try {
     const { cloudantClient } = await connectDB();
 
-    const result = await cloudantClient.postAllDocs({
+    const response = await cloudantClient.postFind({
       db: TASKS_DB,
-      includeDocs: true,
+      selector: {},
     });
 
-    const tasks = result.result.rows.map((row) => row.doc);
-
-    res.json({
+    return res.status(200).json({
       success: true,
-      tasks,
+      tasks: response.result.docs,
     });
   } catch (err) {
-    console.error('❌ Get All Tasks Error:', err.message);
-    res.status(500).json({ success: false, message: 'Server error while fetching all tasks' });
+    console.error("❌ Get All Tasks Error:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: "Server error during task fetch",
+    });
   }
 };
 
-// ===========================
+// =====================================================
+// 🎓 GET TASKS FOR LOGGED-IN STUDENT
+// =====================================================
+exports.getMyTasks = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+    const { cloudantClient } = await connectDB();
+
+    const response = await cloudantClient.postFind({
+      db: TASKS_DB,
+      selector: {
+        assignedTo: { "$elemMatch": { "$eq": studentId } },
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      tasks: response.result.docs,
+    });
+  } catch (err) {
+    console.error("❌ Get My Tasks Error:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching your tasks",
+    });
+  }
+};
+
+// =====================================================
 // ✏️ UPDATE TASK (Admin)
-// ===========================
+// =====================================================
 exports.updateTask = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, assignedTo, status } = req.body;
+    const { title, description, dueDate, assignedTo } = req.body;
 
     const { cloudantClient } = await connectDB();
 
-    const existing = await cloudantClient.getDocument({
-      db: TASKS_DB,
-      docId: id,
-    });
+    const existing = await cloudantClient.getDocument({ db: TASKS_DB, docId: id });
 
     const updatedTask = {
       ...existing.result,
-      title: title || existing.result.title,
-      description: description || existing.result.description,
-      assignedTo: assignedTo || existing.result.assignedTo,
-      status: status || existing.result.status,
-      updatedAt: new Date().toISOString(),
+      title,
+      description,
+      dueDate,
+      assignedTo,
     };
 
     const response = await cloudantClient.putDocument({
@@ -117,42 +131,78 @@ exports.updateTask = async (req, res) => {
       document: updatedTask,
     });
 
-    res.json({
+    return res.status(200).json({
       success: true,
-      message: 'Task updated ✅',
+      message: "✅ Task updated successfully",
     });
   } catch (err) {
-    console.error('❌ Update Task Error:', err.message);
-    res.status(500).json({ success: false, message: 'Server error during task update' });
+    console.error("❌ Update Task Error:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while updating task",
+    });
   }
 };
 
-// ===========================
-// 🗑️ DELETE TASK (Admin)
-// ===========================
+// =====================================================
+// ❌ DELETE TASK (Admin)
+// =====================================================
 exports.deleteTask = async (req, res) => {
   try {
     const { id } = req.params;
 
     const { cloudantClient } = await connectDB();
 
-    const existing = await cloudantClient.getDocument({
+    const taskDoc = await cloudantClient.getDocument({ db: TASKS_DB, docId: id });
+
+    await cloudantClient.deleteDocument({
       db: TASKS_DB,
       docId: id,
+      rev: taskDoc.result._rev,
     });
 
-    const response = await cloudantClient.deleteDocument({
-      db: TASKS_DB,
-      docId: id,
-      rev: existing.result._rev,
-    });
-
-    res.json({
+    return res.status(200).json({
       success: true,
-      message: 'Task deleted ✅',
+      message: "🗑️ Task deleted successfully",
     });
   } catch (err) {
-    console.error('❌ Delete Task Error:', err.message);
-    res.status(500).json({ success: false, message: 'Server error during task deletion' });
+    console.error("❌ Delete Task Error:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while deleting task",
+    });
+  }
+};
+
+// =====================================================
+// 🧩 UPDATE TASK STATUS (Student)
+// =====================================================
+exports.updateTaskStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const { cloudantClient } = await connectDB();
+
+    const existingTask = await cloudantClient.getDocument({ db: TASKS_DB, docId: id });
+
+    existingTask.result.status = status;
+
+    await cloudantClient.putDocument({
+      db: TASKS_DB,
+      docId: id,
+      document: existingTask.result,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "✅ Task status updated",
+    });
+  } catch (err) {
+    console.error("❌ Status Update Error:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: "Server error during status update",
+    });
   }
 };

@@ -1,77 +1,96 @@
+// controllers/authController.js
+
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const connectDB = require("../utils/db");
+const { USERS_DB } = require("../constants/dbNames");
+require("dotenv").config();
 
-// ===========================
-// ✅ REGISTER USER
-// ===========================
+// ==================================
+// ✅ Register Controller
+// ==================================
 exports.register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
     if (!name || !email || !password || !role) {
-      return res.status(400).json({ error: "All fields are required" });
+      return res.status(400).json({
+        success: false,
+        error: "All fields are required ❌",
+      });
     }
 
-    const { cloudantClient, usersDb } = await connectDB();
+    const { cloudantClient } = await connectDB();
 
-    // ✅ Check if user exists
     const existingUser = await cloudantClient.postFind({
-      db: usersDb,
+      db: USERS_DB, // ✅ FIXED
       selector: { email },
     });
 
     if (existingUser.result.docs.length > 0) {
-      return res.status(409).json({ error: "Email already registered" });
+      return res.status(409).json({
+        success: false,
+        error: "Email already registered ⚠️",
+      });
     }
 
-    // ✅ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = { name, email, password: hashedPassword, role };
 
-    // ✅ Save to DB
     const response = await cloudantClient.postDocument({
-      db: usersDb,
+      db: USERS_DB, // ✅ FIXED
       document: newUser,
     });
 
     return res.status(201).json({
-      message: "User registered ✅",
+      success: true,
+      message: "User registered successfully ✅",
       userId: response.result.id,
     });
-  } catch (err) {
-    console.error("❌ Register Error:", err.message);
-    return res.status(500).json({ error: "Server error during registration" });
+  } catch (error) {
+    console.error("❌ Register Error:", error.message);
+    return res.status(500).json({
+      success: false,
+      error: "Server error during registration",
+    });
   }
 };
 
-// ===========================
-// ✅ LOGIN USER
-// ===========================
+// ==================================
+// ✅ Login Controller
+// ==================================
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ error: "Email and password required" });
+      return res.status(400).json({
+        success: false,
+        error: "Email and password required ❌",
+      });
     }
 
-    const { cloudantClient, usersDb } = await connectDB();
+    const { cloudantClient } = await connectDB();
 
-    const result = await cloudantClient.postFind({
-      db: usersDb,
+    const userResult = await cloudantClient.postFind({
+      db: USERS_DB, // ✅ FIXED
       selector: { email },
     });
 
-    const user = result.result.docs[0];
-
+    const user = userResult.result.docs[0];
     if (!user) {
-      return res.status(401).json({ error: "Invalid credentials ❌" });
+      return res.status(401).json({
+        success: false,
+        error: "Invalid credentials ❌",
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ error: "Invalid credentials ❌" });
+      return res.status(401).json({
+        success: false,
+        error: "Invalid credentials ❌",
+      });
     }
 
     const token = jwt.sign(
@@ -81,6 +100,7 @@ exports.login = async (req, res) => {
     );
 
     return res.status(200).json({
+      success: true,
       message: "Login successful ✅",
       token,
       user: {
@@ -89,8 +109,43 @@ exports.login = async (req, res) => {
         role: user.role,
       },
     });
-  } catch (err) {
-    console.error("❌ Login Error:", err.message);
-    return res.status(500).json({ error: "Server error during login" });
+  } catch (error) {
+    console.error("❌ Login Error:", error.message);
+    return res.status(500).json({
+      success: false,
+      error: "Server error during login",
+    });
+  }
+};
+
+// ==================================
+// ✅ Get All Students (Admin)
+// ==================================
+exports.getAllStudents = async (req, res) => {
+  try {
+    const { cloudantClient } = await connectDB();
+
+    const result = await cloudantClient.postFind({
+      db: USERS_DB, // ✅ FIXED
+      selector: { role: "student" },
+      fields: ["_id", "name", "email"],
+    });
+
+    const students = result.result.docs.map(({ _id, name, email }) => ({
+      id: _id,
+      name,
+      email,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      students,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching students:", error.message);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to fetch students",
+    });
   }
 };

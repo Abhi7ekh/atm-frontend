@@ -1,8 +1,42 @@
-const express = require('express');
+// routes/authRoutes.js
+
+const express = require("express");
 const router = express.Router();
-const { register, login } = require('../controllers/authController');
 
-router.post('/register', register);
-router.post('/login', login);
+// 🔁 Controllers
+const {
+  register,
+  login,
+  getAllStudents,
+} = require("../controllers/authController");
 
+// 🔐 Middlewares
+const {
+  verifyToken,
+  isAdmin,
+} = require("../middlewares/authMiddleware");
+
+// ============================
+// ✅ Public Routes
+// ============================
+
+// 🔓 Login
+router.post("/login", login);
+
+// 🧾 Register (general use)
+router.post("/register", register);
+
+// ============================
+// 🔐 Admin Protected Routes
+// ============================
+
+// 🧑‍🎓 Register a student (Admin only)
+router.post("/register-student", verifyToken, isAdmin, register);
+
+// 📋 Get all students (Admin only)
+router.get("/students", verifyToken, isAdmin, getAllStudents);
+
+// ============================
+// ✅ Export Routes
+// ============================
 module.exports = router;

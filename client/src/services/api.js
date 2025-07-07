@@ -1,49 +1,65 @@
 const API_BASE_URL = "http://localhost:5000/api";
 
-// 🔐 Login
+// 🔐 Login User
 export const loginUser = async (email, password) => {
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ email, password }),
     });
-    return await res.json();
+    return await response.json();
   } catch (error) {
-    return { error: "Login failed. Please try again later." };
+    return { success: false, error: "Login failed. Please try again later." };
   }
 };
 
-// 📝 Register
+// 📝 Register User
 export const registerUser = async (userData) => {
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/register`, {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(userData),
     });
-    return await res.json();
+    return await response.json();
   } catch (error) {
-    return { error: "Registration failed. Please try again later." };
+    return { success: false, error: "Registration failed. Please try again later." };
   }
 };
 
-// 🎓 Get Tasks for Logged-in Student
+// ✅ Register Student (Admin Only)
+export const registerStudent = async (studentData, token) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/register-student`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(studentData),
+    });
+    return await response.json();
+  } catch (error) {
+    return { success: false, error: "Student registration failed." };
+  }
+};
+
+// 🎓 Get Tasks Assigned to Logged-in Student
 export const getMyTasks = async (token) => {
   try {
-    const res = await fetch(`${API_BASE_URL}/tasks/my`, {
+    const response = await fetch(`${API_BASE_URL}/tasks/my`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
-
-    const data = await res.json();
-    return { success: true, tasks: data.tasks || data }; // handles both shapes
+    const data = await response.json();
+    return { success: true, tasks: data.tasks || data };
   } catch (error) {
     return { success: false, message: "Unable to fetch student tasks." };
   }
@@ -52,24 +68,23 @@ export const getMyTasks = async (token) => {
 // 🧑‍💼 Get All Tasks (Admin Only)
 export const getAllTasks = async (token) => {
   try {
-    const res = await fetch(`${API_BASE_URL}/tasks/all`, {
+    const response = await fetch(`${API_BASE_URL}/tasks/all`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
-
-    const data = await res.json();
-    return { success: true, tasks: data.tasks || data }; // consistent shape
+    const data = await response.json();
+    return { success: true, tasks: data.tasks || data };
   } catch (error) {
     return { success: false, message: "Unable to fetch tasks." };
   }
 };
 
-// ➕ Create Task (Admin Only)
-export const createTask = async (taskData, token) => {
+// ➕ Create New Task (Admin Only)
+export const createTask = async (token,taskData) => {
   try {
-    const res = await fetch(`${API_BASE_URL}/tasks`, {
+    const response = await fetch(`${API_BASE_URL}/tasks`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -77,16 +92,16 @@ export const createTask = async (taskData, token) => {
       },
       body: JSON.stringify(taskData),
     });
-    return await res.json();
+    return await response.json();
   } catch (error) {
-    return { error: "Task creation failed." };
+    return { success: false, error: "Task creation failed." };
   }
 };
 
-// ✏️ Update Task (Optional – Backend not implemented yet)
+// ✏️ Update Existing Task (Admin Only)
 export const updateTask = async (taskId, updatedData, token) => {
   try {
-    const res = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+    const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -94,23 +109,57 @@ export const updateTask = async (taskId, updatedData, token) => {
       },
       body: JSON.stringify(updatedData),
     });
-    return await res.json();
+    return await response.json();
   } catch (error) {
-    return { error: "Task update failed." };
+    return { success: false, error: "Task update failed." };
   }
 };
 
-// ❌ Delete Task (Admin Only – Optional)
+// ✅ Update Task Status (Student Only)
+export const updateTaskStatus = async (taskId, newStatus, token) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/tasks/status/${taskId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    return await response.json();
+  } catch (error) {
+    return { success: false, message: "Status update failed." };
+  }
+};
+
+// ❌ Delete Task (Admin Only)
 export const deleteTask = async (taskId, token) => {
   try {
-    const res = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+    const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
-    return await res.json();
+    return await response.json();
   } catch (error) {
-    return { error: "Task deletion failed." };
+    return { success: false, error: "Task deletion failed." };
   }
 };
+
+
+// 👥 Get All Students (Admin Only)
+export const getStudents = async (token) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/students`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return await response.json();
+  } catch (error) {
+    return { success: false, error: "Failed to fetch students list." };
+  }
+};
+

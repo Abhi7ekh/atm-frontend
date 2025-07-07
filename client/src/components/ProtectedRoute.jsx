@@ -1,27 +1,32 @@
+// client/src/components/ProtectedRoute.jsx
+
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
 /**
- * Protects route access based on auth token and user role.
- * 
- * @param {ReactNode} children - Component to render if access is granted.
- * @param {Array<string>} allowedRoles - Roles allowed to access this route.
+ * 🔒 ProtectedRoute Component
+ * Restricts access based on token and role.
+ *
+ * @param {Object} props
+ * @param {React.ReactNode} props.children - Component to render
+ * @param {Array<string>} props.allowedRoles - Array of roles allowed to access
  */
-const ProtectedRoute = ({ children, allowedRoles }) => {
+const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
   const location = useLocation();
 
-  // 🚫 Redirect if not logged in
+  // 🚫 Not authenticated
   if (!token) {
-    return <Navigate to="/" state={{ from: location }} replace />;
+    return <Navigate to="/" replace state={{ from: location }} />;
   }
 
-  // 🔐 Redirect if role mismatch
-  if (allowedRoles && !allowedRoles.includes(role)) {
-    return <Navigate to="/" state={{ from: location }} replace />;
+  // 🚫 Role not allowed
+  if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
+    return <Navigate to="/" replace state={{ from: location }} />;
   }
 
+  // ✅ Access granted
   return children;
 };
 
