@@ -1,13 +1,12 @@
-const API_BASE_URL = "https://atm-backend-ml7v.onrender.com/api";
+// Use environment variable to switch automatically between local and production
+const API_BASE_URL = import.meta.env.VITE_REACT_APP_API_BASE_URL;
 
 // 🔐 Login User
 export const loginUser = async (email, password) => {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
     return await response.json();
@@ -16,14 +15,12 @@ export const loginUser = async (email, password) => {
   }
 };
 
-// 📝 Register User
+// 📝 Register Admin
 export const registerUser = async (userData) => {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData),
     });
     return await response.json();
@@ -49,39 +46,35 @@ export const registerStudent = async (studentData, token) => {
   }
 };
 
-// 🎓 Get Tasks Assigned to Logged-in Student
+// 🧑‍🎓 Student: My Tasks
 export const getMyTasks = async (token) => {
   try {
     const response = await fetch(`${API_BASE_URL}/tasks/my`, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
     const data = await response.json();
     return { success: true, tasks: data.tasks || data };
-  } catch (error) {
+  } catch {
     return { success: false, message: "Unable to fetch student tasks." };
   }
 };
 
-// 🧑‍💼 Get All Tasks (Admin Only)
+// 🧑‍💼 Admin: All Tasks
 export const getAllTasks = async (token) => {
   try {
     const response = await fetch(`${API_BASE_URL}/tasks/all`, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
     const data = await response.json();
     return { success: true, tasks: data.tasks || data };
-  } catch (error) {
+  } catch {
     return { success: false, message: "Unable to fetch tasks." };
   }
 };
 
-// ➕ Create New Task (Admin Only)
+// ➕ Create Task
 export const createTask = async (token, taskData) => {
   try {
     const response = await fetch(`${API_BASE_URL}/tasks`, {
@@ -93,12 +86,12 @@ export const createTask = async (token, taskData) => {
       body: JSON.stringify(taskData),
     });
     return await response.json();
-  } catch (error) {
+  } catch {
     return { success: false, error: "Task creation failed." };
   }
 };
 
-// ✏️ Update Existing Task (Admin Only)
+// ✏️ Update Task
 export const updateTask = async (taskId, updatedData, token) => {
   try {
     const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
@@ -110,12 +103,12 @@ export const updateTask = async (taskId, updatedData, token) => {
       body: JSON.stringify(updatedData),
     });
     return await response.json();
-  } catch (error) {
+  } catch {
     return { success: false, error: "Task update failed." };
   }
 };
 
-// ✅ Update Task Status (Student Only)
+// ✅ Student: Update Task Status
 export const updateTaskStatus = async (taskId, newStatus, token) => {
   try {
     const response = await fetch(`${API_BASE_URL}/tasks/status/${taskId}`, {
@@ -127,37 +120,33 @@ export const updateTaskStatus = async (taskId, newStatus, token) => {
       body: JSON.stringify({ status: newStatus }),
     });
     return await response.json();
-  } catch (error) {
+  } catch {
     return { success: false, message: "Status update failed." };
   }
 };
 
-// ❌ Delete Task (Admin Only)
+// ❌ Delete Task
 export const deleteTask = async (taskId, token) => {
   try {
     const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
     return await response.json();
-  } catch (error) {
+  } catch {
     return { success: false, error: "Task deletion failed." };
   }
 };
 
-// 👥 Get All Students (Admin Only)
+// 👥 Admin: Get All Students
 export const getStudents = async (token) => {
   try {
     const response = await fetch(`${API_BASE_URL}/students`, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
     return await response.json();
-  } catch (error) {
+  } catch {
     return { success: false, error: "Failed to fetch students list." };
   }
 };
