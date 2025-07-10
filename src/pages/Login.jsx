@@ -3,6 +3,8 @@ import { loginUser } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Card from '../components/ui/Card.jsx';
+import Button from '../components/ui/Button.jsx';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -41,16 +43,16 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-indigo-100 px-4">
-      <div className="w-full max-w-md p-8 bg-white shadow-lg rounded-xl border border-blue-200">
-        <h1 className="text-center text-4xl font-bold text-blue-700 mb-8">📝 Task Manager</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-white to-secondary/5 px-4">
+      <Card className="w-full max-w-md p-8">
+        <h1 className="text-center text-4xl font-display font-bold text-primary mb-8">📝 Task Manager</h1>
         <h2 className="text-2xl font-semibold text-center text-gray-700 mb-6">🔐 Login to your account</h2>
 
         <form onSubmit={handleLogin} className="space-y-5">
           <input
             type="email"
             placeholder="Enter your email"
-            className="w-full p-3 border rounded-lg focus:outline-none focus:ring focus:border-blue-400"
+            className="w-full p-3 border rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -59,31 +61,29 @@ const Login = () => {
           <input
             type="password"
             placeholder="Enter your password"
-            className="w-full p-3 border rounded-lg focus:outline-none focus:ring focus:border-blue-400"
+            className="w-full p-3 border rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
 
-          <button
-            type="submit"
-            className="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-200"
-          >
+          <Button type="submit" variant="primary" className="w-full py-3">
             🔓 Login
-          </button>
+          </Button>
         </form>
 
         {/* 🔧 Create Admin Button */}
         <div className="text-center mt-6">
           <p className="text-sm text-gray-500 mb-2">Need admin access?</p>
-          <button
-            onClick={() => navigate("/register-admin")}
-            className="text-indigo-600 font-medium hover:underline"
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/register-admin')}
+            className="font-medium"
           >
             ➕ Create Admin Account
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

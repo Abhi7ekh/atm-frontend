@@ -1,3 +1,26 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap');
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+:root {
+  --color-primary: #4f46e5; /* indigo-600 */
+  --color-secondary: #c026d3; /* fuchsia-600 */
+  --color-accent: #ec4899; /* pink-500 */
+  --color-success: #22c55e; /* green-500 */
+  --color-danger: #ef4444; /* red-500 */
+  --color-muted: #f3f4f6; /* gray-100 */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+}
+
+body {
+  @apply font-sans bg-muted text-gray-800;
+}
